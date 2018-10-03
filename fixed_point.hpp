@@ -261,6 +261,12 @@ namespace emt
             *this *= static_cast<fixed_point<P,U>>(rhs);
         return *this;
     }
+
+    template <uint32_t P, typename U> template <typename T>
+    constexpr fixed_point<P,U> fixed_point<P,U>::operator*(const T& rhs) noexcept
+    {
+        return (fixed_point<P,U>(*this)) *= rhs;
+    }
 }
 
 // set up stuff that expects us to
