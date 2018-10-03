@@ -49,6 +49,24 @@ namespace emt
         return rval;
     }
 
+    template <typename T>
+    struct integer_overflow_struct
+    { using type = void;};
+
+    template <> struct integer_overflow_struct<int8_t> { using type = int16_t; };
+    template <> struct integer_overflow_struct<int16_t> { using type = int32_t; };
+    template <> struct integer_overflow_struct<int32_t> { using type = int64_t; };
+
+    template <> struct integer_overflow_struct<uint8_t> { using type = uint16_t; };
+    template <> struct integer_overflow_struct<uint16_t> { using type = uint32_t; };
+    template <> struct integer_overflow_struct<uint32_t> { using type = uint64_t; };
+
+    // ifdef these behind feature test macro
+    template <> struct integer_overflow_struct<int64_t> { using type = __int128; };
+    template <> struct integer_overflow_struct<uint64_t> { using type = __uint128_t; };
+
+    template <typename T>
+    using integer_overflow_type = typename integer_overflow_struct<T>::type;
 }
 
 namespace emt
@@ -212,20 +230,32 @@ namespace emt
             value *= rhs * (1 << P);
         else if constexpr (is_fixed_point_type<T>::value)
         {
-            const U rv = static_cast<fixed_point<P,U>>(rhs).value;
+            // fast way, if we have overflow type available
+            if constexpr((fractional_bits == T::fractional_bits)
+                      && (std::is_same<underlying_type, typename T::underlying_type>::value)
+                      && (!std::is_same<integer_overflow_type<underlying_type>, void>::value))
+            {
+                using overflow_type = integer_overflow_type<underlying_type>;
+                overflow_type tval = static_cast<overflow_type>(value) * static_cast<overflow_type>(rhs.value);
+                tval >>= fractional_bits;
+                value = tval;
+            } else {
+                // slower, but works without overflow types
+                const U rv = static_cast<fixed_point<P,U>>(rhs).value;
 
-            const U lhs_int = value >> fractional_bits;
-            const U lhs_frac = (value & ~mask_bits<U>(P));
+                const U lhs_int = value >> fractional_bits;
+                const U lhs_frac = (value & ~mask_bits<U>(P));
 
-            const U rhs_int = rv >> fractional_bits;
-            const U rhs_frac = (rv & ~mask_bits<U>(fractional_bits));
+                const U rhs_int = rv >> fractional_bits;
+                const U rhs_frac = (rv & ~mask_bits<U>(fractional_bits));
 
-            const U x1 = lhs_int * rhs_int;
-            const U x2 = lhs_int * rhs_frac;
-            const U x3 = lhs_frac * rhs_int;
-            const U x4 = lhs_frac * rhs_frac;
+                const U x1 = lhs_int * rhs_int;
+                const U x2 = lhs_int * rhs_frac;
+                const U x3 = lhs_frac * rhs_int;
+                const U x4 = lhs_frac * rhs_frac;
 
-            value = (x1 << P) + (x2 + x3) + (x4 >> P);
+                value = (x1 << P) + (x2 + x3) + (x4 >> P);
+            }
         }
         else
             *this *= static_cast<fixed_point<P,U>>(rhs);
