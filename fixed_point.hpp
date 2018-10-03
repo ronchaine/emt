@@ -1,5 +1,5 @@
-#ifndef VFPM_HPP
-#define VFPM_HPP
+#ifndef EMT_FIXED_POINT_HPP
+#define EMT_FIXED_POINT_HPP
 
 #include <cstdint>
 #include <type_traits>
@@ -61,7 +61,7 @@ namespace emt
     template <> struct integer_overflow_struct<uint16_t> { using type = uint32_t; };
     template <> struct integer_overflow_struct<uint32_t> { using type = uint64_t; };
 
-    // ifdef these behind feature test macro
+    // ifdef these behind feature test macro or smth
     template <> struct integer_overflow_struct<int64_t> { using type = __int128; };
     template <> struct integer_overflow_struct<uint64_t> { using type = __uint128_t; };
 
