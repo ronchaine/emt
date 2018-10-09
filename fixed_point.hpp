@@ -105,6 +105,8 @@ namespace emt
 
             template <typename T> constexpr fixed_point& operator *=(const T& rhs) noexcept;
             template <typename T> constexpr fixed_point operator *(const T& rhs) noexcept;
+            template <typename T> constexpr fixed_point& operator /=(const T& rhs) noexcept;
+            template <typename T> constexpr fixed_point operator /(const T& rhs) noexcept;
 
         private:
             friend struct std::hash<fixed_point>;
@@ -124,29 +126,8 @@ namespace emt
             #endif
             BaseType value = 0;
     };
-    /*
-            // this is a lot prettier with ArithmeticType concept
-            template <typename T>
-            explicit constexpr operator T()
-            {
-                static_assert(std::is_arithmetic<T>::value);
-                if constexpr(std::is_interal<T>::value)
-                    return (T)(value >> Precision);
-                else if constexpr(std::is_floating_point<T>::value)
-                    return (T)((T)value) / (1 << Precision);
-            }
 
-            // I wish there were IntegralType and FloatingPointType concepts for this...
-            template <uint32_t P, template T>
-            operator fixed_point<P>()
-            {
-                if constexpr (P > Precision)
-                    return (value >> (P - Precision));
-                else
-                    return (value << (Precision - P));
-            }
-    */
-    using fixed = fixed_point<16, int>;
+    using fixed16s = fixed_point<16, int>;
 
     /*
      *  Conversions
@@ -267,6 +248,38 @@ namespace emt
     {
         return (fixed_point<P,U>(*this)) *= rhs;
     }
+    
+    template <uint32_t P, typename U> template <typename T>
+    constexpr fixed_point<P,U>& fixed_point<P,U>::operator/=(const T& rhs) noexcept
+    {
+        if constexpr (std::is_integral<T>::value)
+            value /= (rhs << P);
+        else if constexpr (std::is_floating_point<T>::value)
+            value /= rhs * (1 << P);
+        else if constexpr (is_fixed_point_type<T>::value)
+        {
+            if constexpr((fractional_bits == T::fractional_bits)
+                    && (std::is_same<underlying_type, typename T::underlying_type>::value)
+                    && (!std::is_same<integer_overflow_type<underlying_type>, void>::value))
+            {
+                using overflow_type = integer_overflow_type<underlying_type>;
+                overflow_type dividend = static_cast<overflow_type>(value);
+                const overflow_type divisor = static_cast<overflow_type>(rhs.value);
+                dividend <<= fractional_bits;
+                value = dividend / divisor;
+            }
+        }
+        else
+            *this /= static_cast<fixed_point<P,U>>(rhs);
+
+        return *this;
+    }
+
+    template <uint32_t P, typename U> template <typename T>
+    constexpr fixed_point<P,U> fixed_point<P,U>::operator/(const T& rhs) noexcept
+    {
+        return (fixed_point<P,U>(*this)) /= rhs;
+    }
 }
 
 // set up stuff that expects us to
@@ -293,3 +306,27 @@ namespace std
 
 
 #endif
+
+/*
+ Licence
+
+ Copyright (c) 2018 Jari Ronkainen
+
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+
+    Permission is granted to anyone to use this software for any purpose, including
+    commercial applications, and to alter it and redistribute it freely, subject to
+    the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not claim
+       that you wrote the original software. If you use this software in a product,
+       an acknowledgment in the product documentation would be appreciated but is
+       not required.
+
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+*/
