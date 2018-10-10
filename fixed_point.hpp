@@ -206,9 +206,9 @@ namespace emt
     constexpr fixed_point<P,U>& fixed_point<P,U>::operator*=(const T& rhs) noexcept
     {
         if constexpr (std::is_integral<T>::value)
-            value *= (rhs << P);
+            value *= rhs;
         else if constexpr (std::is_floating_point<T>::value)
-            value *= rhs * (1 << P);
+            value *= rhs;
         else if constexpr (is_fixed_point_type<T>::value)
         {
             // fast way, if we have overflow type available
@@ -253,9 +253,9 @@ namespace emt
     constexpr fixed_point<P,U>& fixed_point<P,U>::operator/=(const T& rhs) noexcept
     {
         if constexpr (std::is_integral<T>::value)
-            value /= (rhs << P);
+            value /= rhs;
         else if constexpr (std::is_floating_point<T>::value)
-            value /= rhs * (1 << P);
+            value /= rhs;
         else if constexpr (is_fixed_point_type<T>::value)
         {
             if constexpr((fractional_bits == T::fractional_bits)
@@ -282,7 +282,7 @@ namespace emt
     }
 }
 
-// set up stuff that expects us to
+// set up stuff that we are expected to
 namespace std
 {
     // Add ourselves to is_arithmetic, because we are.
