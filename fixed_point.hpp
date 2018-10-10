@@ -86,15 +86,23 @@ namespace emt
             constexpr fixed_point(const fixed_point&) noexcept = default;
             constexpr fixed_point(fixed_point&&) noexcept = default;
 
-            // for arithmetic types
-//            template <typename T, typename std::enable_if_t<std::is_arithmetic<T>::value>>
+            // conversion to
+            template <typename T>
+            constexpr fixed_point(T) noexcept;
+
+            // conversion from
             template <typename T>
             constexpr operator T() const noexcept;
 
             template <uint32_t P, typename U>
             constexpr operator fixed_point<P,U>() const noexcept;
-            //std::strong_ordering operator<=>(const fixed_point& rhs) const = default;
 
+            // comparison
+            //std::strong_ordering operator<=>(const fixed_point& rhs) const = default;
+            template <typename T> constexpr bool operator==(const T& rhs) noexcept
+            {
+                return value == static_cast<fixed_point>(rhs).value;
+            }
             /*
              * Arithmetic operations
              */
@@ -132,6 +140,15 @@ namespace emt
     /*
      *  Conversions
      */
+    template <uint32_t Precision, typename Underlying_Type> template <typename T>
+    constexpr fixed_point<Precision,Underlying_Type>::fixed_point(T in) noexcept
+    {
+        if constexpr(std::is_integral<T>::value)
+            value = in << Precision;
+        else
+            static_assert(std::is_integral<T>::value, "Non-integer conversion");
+    }
+
     template <uint32_t Precision, typename Underlying_Type>
     template <typename T>//, typename std::enable_if_t<std::is_arithmetic<T>::value>>
     constexpr fixed_point<Precision,Underlying_Type>::operator T() const noexcept
