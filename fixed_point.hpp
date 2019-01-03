@@ -8,6 +8,42 @@
 #include <iostream>
 #endif
 
+/*
+ * TODO:
+ *  basic stuff:
+ *  abs()
+ *  fmod()
+ *  remainder()
+ *  max()
+ *  min()
+ *  exp()
+ *  exp2()
+ *  expm1()
+ *  log()
+ *  log10()
+ *  log2()
+ *  log1p()
+ *  pow()
+ *  sqrt()
+ *  cbrt()
+ *
+ *  trigonometry:
+ *  hypot()
+ *  sin()
+ *  cos()
+ *  tan()
+ *  asin()
+ *  acos()
+ *  atan()
+ *  atan2()
+ *
+ *  sinh()
+ *  cosh()
+ *  tanh()
+ *  asinh()
+ *  acosh()
+ *  atanh()
+ */
 namespace emt
 {
     template <uint32_t Precision, typename BaseType = int32_t>
