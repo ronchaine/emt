@@ -4,10 +4,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#ifdef USE_CPP20_FEATUERS
-#define USE_THREE_WAY_COMPARISON
-#endif
-
 #ifdef ADD_FP_IOSTREAM
 #include <iostream>
 #endif
@@ -103,6 +99,13 @@ namespace emt
             {
                 return value == static_cast<fixed_point>(rhs).value;
             }
+
+            /*
+             * Assignment
+             */
+            constexpr fixed_point& operator=(fixed_point&& rhs) noexcept;
+            constexpr fixed_point& operator=(const fixed_point& rhs) noexcept;
+
             /*
              * Arithmetic operations
              */
@@ -138,6 +141,23 @@ namespace emt
     using fixed16s = fixed_point<16, int>;
 
     /*
+     *  Assignment
+     */
+    template <uint32_t P, typename U>
+    constexpr fixed_point<P,U>& fixed_point<P,U>::operator=(fixed_point&& rhs) noexcept
+    {
+        value = std::move(rhs.value);
+        return *this;
+    }
+
+    template <uint32_t P, typename U>
+    constexpr fixed_point<P,U>& fixed_point<P,U>::operator=(const fixed_point& rhs) noexcept
+    {
+        value = rhs.value;
+        return *this;
+    }
+
+    /*
      *  Conversions
      */
     template <uint32_t Precision, typename Underlying_Type> template <typename T>
@@ -145,8 +165,10 @@ namespace emt
     {
         if constexpr(std::is_integral<T>::value)
             value = in << Precision;
+        else if constexpr(std::is_floating_point<T>::value)
+            value = in * (1 << Precision);
         else
-            static_assert(std::is_integral<T>::value, "Non-integer conversion");
+            static_assert(std::is_integral<T>::value, "Unknown conversion");
     }
 
     template <uint32_t Precision, typename Underlying_Type>
